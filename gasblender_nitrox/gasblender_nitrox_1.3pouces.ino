@@ -30,6 +30,7 @@
 #include <Adafruit_ADS1X15.h>
 #include <EEPROM.h>
 #include "RunningAverage.h"
+#include "pitches.h"
 
 #define RA_SIZE 5
 RunningAverage RA(RA_SIZE);
@@ -51,10 +52,16 @@ byte previous = HIGH;
 unsigned long firstTime; // how long since the button was first pressed
 int active = 0;
 double result_max = 0;
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+int noteDurations[] = {
+  4, 8, 8, 4, 4, 4, 4, 4
+};
 
 // not used for gasblender 1.0 version
 //const int buttonPin = 2; // push button
-//const int buzzer = 8; // buzzer
+const int buzzerPin = 2; // buzzer (D2)
 //const int ledPin = 13; // led
 //const int cal_holdTime = 2; // 2 sec button hold to calibration
 //const int mod_holdTime = 3; // 3 sec hold to po2 mod change
@@ -72,18 +79,29 @@ float cal_mod (float percentage, float ppo2 = 1.4) {
   return 10 * ( (ppo2 / (percentage / 100)) - 1 );
 }
 
-//not used for gasblender 1.0
-/*
-void beep(int x = 1) { // make beep for x time
-  //digitalWrite(ledPin, HIGH); // led blink disable for battery save
-  for (int i = 0; i < x; i++) {
-    tone(buzzer, 2800, 100);
-    delay(200);
+// make tada for x time
+void tada(int x = 1) { 
+  for (int thisNote = 0; thisNote < 8; thisNote++) {
+    // to calculate the note duration, take one second divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(buzzerPin, melody[thisNote], noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // The note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(buzzerPin);
   }
-  //digitalWrite(ledPin, LOW);
-  noTone(buzzer);
 }
-*/
+
+void beep(int x = 1) { 
+  int noteDuration = 500;
+  tone(buzzerPin, melody[x], noteDuration);
+  delay(400);
+  noTone(buzzerPin);
+}
 
 void read_sensor(int adc = 0) {
   int16_t millivolts = 0;
@@ -115,7 +133,7 @@ void read_sensor(int adc = 0) {
 }
 
 void setup(void) {
-
+  pinMode(buzzerPin, OUTPUT);
   Serial.begin(9600);
   Serial.print("Lancement de l'analyseur ...\n");
 
@@ -162,9 +180,6 @@ void setup(void) {
   // Serial.print("\tAnalog3: "); Serial.print(val_3); Serial.print('\t');
   Serial.println();
 
-
-
-
 //  pinMode(buttonPin, INPUT_PULLUP);
   Serial.println(F("SplashScreen started"));
   display.fillScreen(ST77XX_BLACK);
@@ -200,8 +215,7 @@ void setup(void) {
 
   Serial.print("Fin de la phase de lancement...\n");
   display.fillScreen(ST77XX_BLACK);
-  
-  //beep(1);
+  beep(1);
 }
 
 void EEPROMWriteInt(int p_address, int p_value)
@@ -279,7 +293,6 @@ int calibrate(int x) {
   result = abs(result);
   EEPROMWriteInt(x, result); // write to eeprom
 
-  //beep(1);
   delay(1000);
   active = 0;
   Serial.println(result);
