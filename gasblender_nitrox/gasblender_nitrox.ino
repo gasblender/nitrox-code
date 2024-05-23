@@ -1,4 +1,3 @@
-
 /*****************************************************************************
  * 
  * (c) 2019-2020 Éric Seigne <eric@gasblender.org>
@@ -26,14 +25,14 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
-#include <Adafruit_ADS1015.h>
+#include <Adafruit_ADS1X15.h>
 #include <EEPROM.h>
 #include "RunningAverage.h"
 
 #define RA_SIZE 20
 RunningAverage RA(RA_SIZE);
 
-Adafruit_ADS1115 ads(0x48);
+Adafruit_ADS1115 ads;
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -95,16 +94,18 @@ void read_sensor(int adc = 0) {
     RA.addValue(millivolts);
   }
 
-  millivolts = 0;
+/*  
+    
+ millivolts = 0;
   millivolts = ads.readADC_Differential_2_3();
-
+*/
   /* debug  erics */
-    Serial.print("read_sensor He: ");
+    /*Serial.print("read_sensor He: ");
     Serial.print(millivolts);
     Serial.print("\n");
-
+*/
   
-  delay(2000);
+  delay(200);
 }
 
 void setup(void) {
@@ -126,12 +127,27 @@ void setup(void) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;); // Don't proceed, loop forever
   }
+  display.setRotation(0);
 
   ads.setGain(GAIN_TWO);
   multiplier = 0.0625F;
   ads.begin(); // ads1115 start
 
 //  pinMode(buttonPin, INPUT_PULLUP);
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.setTextSize(2);
+  display.println(F("gasblender"));
+  display.setTextSize(1);
+  display.setCursor(0, 22);
+  display.println(F("   Open-Source"));
+  display.println(F("  Open-Hardware"));
+  display.println(F(" Nitrox Analyser"));
+  display.println(F("http://gasblender.org"));
+  display.println(F("          version 1.1"));
+  display.display();
 
   RA.clear();
   for (int cx = 0; cx <= RA_SIZE; cx++) {
@@ -179,20 +195,7 @@ int calibrate(int x) {
     Serial.print(x);
     Serial.print("\n");
   /* */
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.setTextSize(2);
-  display.println(F("gasblender"));
-  display.setTextSize(1);
-  display.setCursor(0, 22);
-  display.println(F("   Open-Source"));
-  display.println(F("  Open-Hardware"));
-  display.println(F(" Nitrox Analyser"));
-  display.println(F("http://gasblender.org"));
-  display.println(F("          version 1.1"));
-  display.display();
-  delay(5000);
+  //delay(5000);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -206,7 +209,7 @@ int calibrate(int x) {
   //RA.clear();
   double result;
   for (int cx = 0; cx <= RA_SIZE; cx++) {
-    if(cx == 10) {
+    if(cx == 18) {
       display.println(".");  
       display.print(".");  
     }
